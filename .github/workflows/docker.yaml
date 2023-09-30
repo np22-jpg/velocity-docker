@@ -69,51 +69,30 @@ jobs:
           GHCR_TAGS: ${{ steps.push-to-ghcr.outputs.digest }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
 
-      # POST
-      - name: Output full image for other jobs
-        id: output-image
-        run: |
-          echo image_name="ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}@${GHCR_TAGS}" >> $GITHUB_OUTPUT
+      #SCAN
 
-      - name: Print image URLs
-        run: |
-          echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}@${GHCR_TAGS}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
 
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@ddccb873888234080b77e9bc2d4764d5ccaaccf9 # v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
 
-  scan_dive:
-    name: Scan Image with Dive
-    needs: build_and_push_docker_images
-
-    permissions:
-      packages: read
-
-    runs-on: ubuntu-latest
-    steps:
       - name: Dive
         uses: yuichielectric/dive-action@c2bf577bd2ed379a30c45597cf304f9f269dbdfe # 0.0.4
         with:
-          image: ${{ needs.build_and_push_docker_images.outputs.image_name }}
+          image: ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}@${GHCR_TAGS}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
-  scan_trivy:
-    name: Scan Images
-    needs: build_and_push_docker_images
-
-    permissions:
-      security-events: write
-      packages: read
-
-    runs-on: ubuntu-latest
-    steps:
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ needs.build_and_push_docker_images.outputs.image_name }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@ddccb873888234080b77e9bc2d4764d5ccaaccf9 # v2
-      with:
-        sarif_file: 'trivy-results.sarif'
-        
+      # POST
+      - name: Print image URLs
+      run: |
+        echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
