@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *' # Every day at midnight
+  push:
+    branches:
+      - main
 
 jobs:
   build_and_push_docker_images:
