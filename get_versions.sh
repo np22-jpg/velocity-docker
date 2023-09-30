@@ -35,6 +35,7 @@ check_for_jq
 
 if [ "$version" == "latest" ]; then
     echo -n "latest "
+    version=$(get_latest_version)
 fi
 
 if [ -z "$version" ]; then
