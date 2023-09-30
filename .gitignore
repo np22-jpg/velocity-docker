@@ -19,3 +19,7 @@ scripts/
 
 # Velocity folder
 velocity/
+velocity.jar
+
+# cosign
+cosign.key

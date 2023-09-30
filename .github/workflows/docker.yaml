@@ -1,54 +1,64 @@
+name: Build and Push to Docker Hub
+
 on:
   workflow_dispatch:
-    inputs:
-      downloadURL:
-        description: Velocity download URL
-        required: true
-        type: string
-      tags:
-        description: docker/metadata-action tags definition
-        required: true
-        type: string
-
-name: Build and push Docker image
+  schedule:
+    - cron: '0 0 * * *' # Every day at midnight
 
 jobs:
-  docker-image:
-    runs-on: ubuntu-latest
-    name: Build and push Docker image
+  build_and_push_docker_images:
+    name: Push Docker image to Docker Hub
 
+    permissions:
+      packages: write
+      contents: read
+
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Download velocity jar
-        run: wget -P velocity/ ${{ inputs.downloadURL }}
-      - name: Docker meta
-        id: docker_meta
-        uses: docker/metadata-action@v4
+      - name: Check out the repo
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+
+      - name: Generate tags
+        id: generate-tags
+        run: |
+          chmod +x get_versions.sh
+          echo ::set-output name=tags::$(date +'%Y%m%d%H%M%S') $(git rev-parse --short HEAD)
+          ./get_versions.sh
+
+      - name: Build Production Images
+        if: github.event_name != 'pull_request'
+        id: build-image
+        uses: redhat-actions/buildah-build@b4dc19b4ba891854660ab1f88a097d45aa158f76 # v2
         with:
-          images: ghcr.io/${{ github.repository_owner }}/velocity
-          tags: ${{ inputs.tags }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Login to GHCR
-        uses: docker/login-action@v3.0.0
+          image: velocity
+          tags: ${{ steps.generate-tags.outputs.tags }}
+          containerfiles: |
+            ./Dockerfile
+
+      # PUSH
+
+      - name: Push To GHCR
+        id: push-to-ghcr
+        uses: redhat-actions/push-to-registry@9986a6552bc4571882a4a67e016b17361412b4df # v2
         with:
-          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-      - name: Summary
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ghcr.io/${{ github.repository_owner }}
+
+      # SIGN
+      - uses: sigstore/cosign-installer@11086d25041f77fe8fe7b9ea4e48e3b9192b8f19 # v3.1.2
+
+      - name: Sign GHCR Image
         run: |
-          echo "## Image tags" >> $GITHUB_STEP_SUMMARY
-          while IFS= read -r line ;
-            do echo "- $line" >> $GITHUB_STEP_SUMMARY;
-          done <<< "$tags"
+          cosign login ghcr.io -u ${{ github.actor }} -p ${{ github.token }}
+          cosign sign -y --key env://COSIGN_PRIVATE_KEY ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}@${GHCR_TAGS}
         env:
-          tags: ${{ steps.docker_meta.outputs.tags }}
+          COSIGN_EXPERIMENTAL: false
+          GHCR_TAGS: ${{ steps.push-to-ghcr.outputs.digest }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+
+      - name: Print image URLs
+        run: |
+          echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
