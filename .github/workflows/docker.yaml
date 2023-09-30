@@ -10,9 +10,6 @@ on:
 
 jobs:
   build_and_push_docker_images:
-    outputs:
-      image_name: ${{ steps.output-image.outputs.image_name }}
-
     strategy:
       matrix:
         versions: [ "1.0.10","1.1.9","3.1.0","3.1.1","3.1.1-SNAPSHOT","3.1.2-SNAPSHOT","latest" ] 
@@ -94,5 +91,5 @@ jobs:
 
       # POST
       - name: Print image URLs
-      run: |
-        echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
+        run: |
+          echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
