@@ -37,8 +37,9 @@ if [ "$version" == "latest" ]; then
     echo -n "latest "
 fi
 
-version=$(get_latest_version)
-
+if [ -z "$version" ]; then
+    version=$(get_latest_version)
+fi
 
 build_num=$(download_latest_build "$version")
 
