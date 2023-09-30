@@ -31,7 +31,7 @@ jobs:
         id: generate-tags
         run: |
           chmod +x get_versions.sh
-          ./get_versions.sh ${{ matrix.versions }}
+          ./get_versions.sh ${{ matrix.versions }} >> $GITHUB_OUTPUT
 
       - name: Build Production Images
         if: github.event_name != 'pull_request'
