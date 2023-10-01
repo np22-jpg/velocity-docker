@@ -1,6 +1,11 @@
 #! /bin/bash
 
 version=$1
+
+if [ -n "$VELOCITY_VERSION" ]; then
+    version=$VELOCITY_VERSION
+fi
+
 echo -n " "
 
 function check_for_curl() {
