@@ -21,15 +21,15 @@ ENV JAVA_FLAGS="-XX:+UseG1GC -XX:G1HeapRegionSize=4M -XX:+UnlockExperimentalVMOp
 
 EXPOSE 25577
 
-WORKDIR /app
+WORKDIR /data
 
-RUN mkdir /data && \
+RUN mkdir /app && \
     apk add --upgrade --no-cache openssl tzdata && \
     addgroup -S velocity && \
     adduser -S velocity -G velocity && \
-    chown velocity:velocity /data /app
+    chown -R velocity:velocity /data /app
 
 COPY --from=downloader --chown=velocity:velocity entrypoint.sh velocity.jar /app/
 
 USER velocity
-ENTRYPOINT ["/app/entrypoint.sh", "velocity.jar"]
+ENTRYPOINT ["/app/entrypoint.sh", "/app/velocity.jar"]
