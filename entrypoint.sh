@@ -19,5 +19,7 @@ if [ "$(stat -c '%u' .)" != "$(id -u)" ]; then
 fi
 
 echo "Running with: \"$JAVA_FLAGS\""
+cd /data || exit
+
 # shellcheck disable=2086
 java $JAVA_FLAGS -jar "$program"
