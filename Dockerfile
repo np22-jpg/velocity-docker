@@ -1,5 +1,5 @@
 FROM docker.io/library/alpine AS downloader
-ENV VELOCITY_VERSION=""
+ARG VELOCITY_VERSION="latest"
 
 COPY . .
 
