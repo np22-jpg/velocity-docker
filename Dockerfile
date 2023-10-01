@@ -1,13 +1,14 @@
-FROM docker.io/library/alpine AS downloader
+FROM docker.io/library/debian:11 AS downloader
 ARG VELOCITY_VERSION="latest"
 
 COPY . .
 
-RUN apk add bash curl jq && \
+RUN apt-get update && \
+    apt-get -y install curl jq && \
     chmod +x get_versions.sh && \
     ./get_versions.sh ${VELOCITY_VERSION}
 
-FROM docker.io/library/amazoncorretto:21-alpine AS release
+FROM docker.io/azul/zulu-openjdk-debian:21-jre-latest AS release
 
 LABEL org.opencontainers.image.vendor="np22-jpg"
 LABEL org.opencontainers.image.title="Velocity"
@@ -24,9 +25,7 @@ EXPOSE 25577
 WORKDIR /data
 
 RUN mkdir /app && \
-    apk add --upgrade --no-cache openssl tzdata && \
-    addgroup -S velocity && \
-    adduser -S velocity -G velocity && \
+    useradd velocity && \
     chown -R velocity:velocity /data /app
 
 COPY --from=downloader --chown=velocity:velocity entrypoint.sh velocity.jar /app/
