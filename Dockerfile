@@ -8,7 +8,7 @@ RUN apt-get update && \
     chmod +x get_versions.sh && \
     ./get_versions.sh ${VELOCITY_VERSION}
 
-FROM docker.io/azul/zulu-openjdk-debian:21-jre-latest AS release
+FROM docker.io/azul/zulu-openjdk-debian:22-jre-latest AS release
 
 LABEL org.opencontainers.image.vendor="np22-jpg"
 LABEL org.opencontainers.image.title="Velocity"
