@@ -69,7 +69,7 @@ jobs:
       #SCAN
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@c07df6fec6fa692e6fd1200d50aaa1fdd66f03c8 # master
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}@${GHCR_TAGS}
           format: 'sarif'
