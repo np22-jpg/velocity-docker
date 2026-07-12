@@ -1,4 +1,4 @@
-FROM docker.io/library/debian:12 AS downloader
+FROM docker.io/library/debian:13 AS downloader
 ARG VELOCITY_VERSION="latest"
 
 COPY . .
